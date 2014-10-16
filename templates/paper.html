@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block main %}
+<main id="main" class="hfeed">
+	<article class="main-article">
+		<header class="article-header">
+			<h2 class="article-title">
+				<a href="#">{{ exam['title'] }}</a>
+			</h2>
+			<div class="article-meta">
+				<time class="article-data">{{ exam['date'].strftime('%Y-%m-%d') }}</time>
+				<span>•</span>{{ exam['views'] }} 浏览
+			</div>
+		</header>
+
+		<div class="article-summary">
+			<form action="/result" method="POST">
+				{% raw xsrf_form_html() %}
+				
+				{% for test in tests %}
+					{% module TestFormatter(test) %}
+				{% end %}
+
+				<div class="login-submit">
+					<button type="submit">提交</button>
+				</div>
+			</form>
+		</div>
+	</article>
+</main>
+{% end %}

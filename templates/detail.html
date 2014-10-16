@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block main %}
+<main id="main" class="hfeed">
+	{% module QuizFormatter(quiz) %}
+
+	{% for answer in answers %}
+		{% module AnswerFormatter(answer) %}
+	{% end %}
+
+	{% module PageFormatter(current_page) %}
+
+	<article class="main-article question-answer">
+		<h2 class="article-title">
+			<span title="回复">回复</span>回复：
+		</h2>
+
+		<form action="/answer" method="POST">
+			{% raw xsrf_form_html() %}
+			<textarea name="answer"></textarea>
+			<button type="submit">提交</button>
+		</form>
+	</article>
+</main>
+{% end %}

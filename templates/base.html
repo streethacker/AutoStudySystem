@@ -1,0 +1,102 @@
+<!Doctype HTML>
+<html>
+	{% block head %}
+	<head>
+		<meta charset="utf-8" />
+		<meta name="description" content="CUMT马克思学院学习问答系统" />
+		<title>自主学习系统</title>
+
+		<link rel="icon" href="{{ static_url('img/favicon.ico') }}">
+		<link rel="stylesheet" type="text/css" href="{{ static_url('css/main.css') }}">
+		<link rel="stylesheet" type="text/css" href="{{ static_url('css/reset.css') }}">
+	</head>
+	{% end %}
+
+	<body>
+		{% block header %}
+		<header id="header">
+			<a id="hgroup">
+				<h1 id="logo">自主学习系统</h1>
+				<i class="slogan" title="返回首页">少壮不努力，老大徒伤悲</i>
+			</a>
+			<nav id="new">
+				<ul class="nav-menu">
+					<li id="menu-item-01" class="menu-item current-menu-item">
+						<a href="/">首页</a>
+					</li>
+					<li id="menu-item-02" class="menu-item">
+						<a href="/diz">你问我答</a>
+					</li>
+					<li id="menu-item-03" class="menu-item">
+						<a href="/exam">自我测评</a>		
+					</li>
+				</ul>
+			</nav>
+		
+			{% block userinfo %}
+			<div id="user-info">
+				{% if current_user %}
+					<a>
+						<img class="excavator" src="{{ static_url(current_user['sculpture']) }}" />
+						<span class="name">{{ current_user['username'] }}</span>
+						<div id="user-widget">
+							<a href="/auth/register">帐号设置</a>
+							<a href="/auth/logout">退出</a>
+						</div>
+					</a>
+				{% end %}
+			</div>
+			{% end %}
+
+		</header>
+		{% end %}
+
+		{% block container %}
+		<div id="container" class="clearfix">
+			{% block main %}
+			{% end %}
+
+			{% block sidebar %}
+			<div id="sidebar">
+				<div id="sidebar-top">
+					<aside id="sidebar-item-1" class="widget">
+						<h3 class="widget-title">
+							<span title="联系方式">联系方式</span>
+						</h3>
+						<div class="textwidget">
+							<p>联系人：156 9526 xxxx</p>
+							<p>办公室：计算机学院A111</p>
+						</div>
+					</aside>
+					<aside id="sidebar-item-2" class="widget">
+						<h3 class="widget-title">
+							<span title="推荐">推荐</span>
+						</h3>
+						<ul>
+							{% for elite in elites %}
+								{% module EliteFormatter(elite) %}
+							{% end %}
+						</ul>
+					</aside>
+				</div>
+			</div>
+			{% end %}
+		</div>
+		{% end %}
+
+	{% block footer %}
+	<footer id="footer">
+		<nav class="link-ours">
+			<a href="#">关于我们</a>
+		</nav>
+		<div class="copyright">
+			@2014<a href="#">学习问答系统</a>.Powered by<a href="#">me</a>.鲁ICP备**************号-1
+		</div>
+		<a id="rocket" href="#top" title="返回顶部" class="show"><i></i></a>
+	</footer>
+	{% end %}
+
+	<script type="text/javascript" src="{{ static_url('js/jquery-1.11.1.js')  }}"></script>
+	<script type="text/javascript" src="{{ static_url('js/main.js') }}"></script>
+	</body>
+</html>

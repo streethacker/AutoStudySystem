@@ -1,0 +1,22 @@
+{% extends "base.html" %} 
+
+{% block userinfo %}{% end %}
+
+{% block main %}                                                                              
+<div id="main-login">                                                                         
+    <div id="main-login-inner">                                                               
+        <form action="/auth/login" method="POST">       
+			{% raw xsrf_form_html() %}
+            <div class="login-group">                                                         
+                <label id="login_user">用户名</label><span></span><input type="text" id="user_id" name="username" />        
+            </div>                                                                            
+            <div class="login-group">                                                         
+                <label id="login_pwd">密码 </label><span></span><input type="password" id="user_pwd" name="password" />    
+            </div>                                                                            
+            <div class="login-submit">                                                        
+                <button type="submit">登录</button>                                           
+            </div>                                                                            
+        </form>                                                                               
+    </div>                                                                                    
+</div>                                                                                        
+{% end %}                                                                               

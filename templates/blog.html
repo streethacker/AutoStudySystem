@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block main %}
+<main id="main" class="hfeed">
+	<article class="post type-post format-standard main-article">
+		<div class="article-cover">
+			<img src="{{ static_url(article['cover']) }}" alt="文章配图" />
+		</div>
+
+		<header class="article-header">
+			<h2 class="article-title">
+				<a href="#">{{ article['title'] }}</a>
+			</h2>
+			<div class="article-meta">
+				<time class="article-data">{{ article['date'].strftime('%Y-%m-%d') }}</time>
+				<span>•</span>{{ article['views'] }} 浏览
+			</div>
+		</header>
+
+		<div class="article-summary">
+			{% raw article['body'] %}
+		</div>
+
+		<footer class="article-footer">
+			<a href="/" class="more-link">回到首页</a>
+		</footer>
+	</article>
+</main>
+{% end %}
