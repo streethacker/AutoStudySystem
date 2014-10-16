@@ -1,0 +1,46 @@
+@charset "utf-8";
+/* CSS Document */
+body,ul,ol,li,p,h1,h2,h3,h4,h5,h6,form,fieldest,table,td,img,div,dl,dt,dd,input{padding:0;margin:0;}
+body{font-size:12px;}
+img{border:none;}
+li{list-style:none;}
+input,select,textarea{outline:none;border:none;background:none;}
+textarea{resize:none;}
+
+body {
+margin: 0;
+padding-top: 64px;
+background: #eee;
+color: #333;
+line-height: 1.5;
+-ms-overflow-style: -ms-autohiding-scrollbar;
+font-size: 14px;
+font-family: 'Helvetica Neue',Helvetica,'Lucida Grande',Arial,'Hiragino Sans GB','\5FAE\8F6F\96C5\9ED1','WenQuanYi Micro Hei',STHeiti,SimSun,sans-serif;
+}
+a {
+color: #666;
+text-decoration: none;
+transition: color .2s;
+}
+
+p {
+margin: 0.7em 0;
+text-indent: 2em;
+line-height: 1.8em;
+}
+/*请浮动*/
+.clearfix:after{content:"";display:block;clear:both;}
+.clearfix{clear:both;}
+.fl{float:left;}
+.fr{float:right;}
+
+.hidden{
+	visibility: hidden;
+}
+.show{
+  visibility:visible;
+}
+
+.error{
+	color: red;
+}
