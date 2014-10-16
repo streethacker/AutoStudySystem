@@ -1,0 +1,16 @@
+<article class="main-article">
+	<header class="article-header">
+		<h2 class="article-title">
+			<a href="{{ '/paper?paper_id=%s' % exam['_id'] }}">{{ exam['title']  }}</a>
+		</h2>
+
+		<div class="article-meta">
+			<time class="article-data">{{ exam['date'].strftime('%Y-%m-%d') }}</time>
+			<span>•</span>{{ exam['views'] }}浏览
+		</div>
+	</header>
+
+	<footer class="article-footer">
+		<a href="{{ '/paper?paper_id=%s' % exam['_id'] }}">查看详情</a>
+	</footer>
+</article>

@@ -1,0 +1,21 @@
+<article class="main-article">
+	<header class="article-header">
+		<div class="article-meta">
+			<time class="article-data">{{ quiz['date'].strftime('%Y-%m-%d %H:%M') }}</time>
+     		<span>•</span>
+			{{ quiz['from'] }}
+		</div>
+	</header>
+
+	<div class="article-summary">
+	<p>{% raw  quiz['body'] %}</p>
+	</div>
+
+	<footer class="article-footer">
+		{% if request.path == '/answer' %}
+		<a href="/diz" class="more-link">返回</a>
+		{% else %}
+		<a href="{{ '/answer?quiz_id=%s' % quiz['_id'] }}" class="more-link">察看详情</a>
+		{% end %}
+	</footer>
+</article>

@@ -1,0 +1,25 @@
+<article class="post type-post format-standard main-article">
+	<a class="article-cover">
+		<img src="{{ static_url(article['cover']) }}" alt="文章配图" />
+	</a>
+
+	<header class="article-header">
+		<h2 class="article-title">
+			<a href="{{ '/blog?blog_id=%s' % article['_id'] }}">{{ article['title'] }}</a>
+		</h2>
+		<div class="article-meta">
+			<time class="article-data">{{ article['date'].strftime('%Y-%m-%d') }}</time>
+     		<span>•</span>
+			{{ article['views'] }}
+			浏览
+		</div>
+	</header>
+
+	<div class="article-summary">
+		<p> {{ article['abstract'] }} </p>
+	</div>
+
+	<footer class="article-footer">
+		<a href="{{ '/blog?blog_id=%s' % article['_id'] }}" class="more-link">继续阅读</a>
+	</footer>
+</article>

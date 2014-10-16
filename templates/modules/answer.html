@@ -1,0 +1,16 @@
+<article class="main-article">
+	<header class="article-header">
+		<div class="article-meta">
+			<time class="article-data">{{ answer['date'].strftime('%Y-%m-%d') }}</time>
+			<span>•</span>{{ answer['from'] }}
+		</div>
+	</header>
+
+	<div class="article-summary article-fold">
+		<p>{{ answer['body'] }}</p>
+	</div>
+
+	<footer class="article-footer">
+		<a href="javascript:;" class="more-link article-fold-a">展开</a>
+	</footer>
+</article>
