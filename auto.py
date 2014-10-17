@@ -68,6 +68,7 @@ class BaseHandler(tornado.web.RequestHandler):
 		DEFAULT_TIMEDELTA_BY_DAYS = 1
 
 		username = self.get_secure_cookie("username")
+
 		if username:
 			self._current_user = yield self.db["users"].find_one({"username":username})
 	
@@ -116,6 +117,8 @@ class LoginHandler(BaseHandler):
 			return
 
 		self.set_secure_cookie("username", username, expires_days=1)
+
+		logging.warning("arguments: %s" % self.request.arguments)
 		self.redirect(self.get_argument("next", "/"))
 
 class RegisterHandler(BaseHandler):
@@ -240,7 +243,7 @@ class DizHandler(BaseHandler):
 class AnswerHandler(BaseHandler):
 	@tornado.gen.coroutine
 	def prepare(self):
-		super(AnswerHandler, self).prepare()
+		yield super(AnswerHandler, self).prepare()  #prepare() here returns a generator, not to execute unless yield it.
 		self._quiz_id = self.get_secure_cookie("quiz_id")
 
 	@property
@@ -262,10 +265,10 @@ class AnswerHandler(BaseHandler):
 
 		_date_point = datetime.datetime.now() - datetime.timedelta(days=DEFAULT_TIMEDELTA_BY_DAYS)
 
-		total_records = yield self.db["quizzes"].find({"date":{"$gt":_date_point}}).count()
+		total_records = yield self.db["answers"].find({"date":{"$gt":_date_point}}).count()
 		total_page = total_records % DEFAULT_PAGESIZE + total_records / DEFAULT_PAGESIZE
 
-		_cursor = self.db["quizzes"].find({"date":{"$gt":_date_point}}).\
+		_cursor = self.db["answers"].find({"date":{"$gt":_date_point}}).\
 				sort("date", -1).\
 				skip((int(current_page)-1) * DEFAULT_PAGESIZE).\
 				limit(DEFAULT_PAGESIZE)
