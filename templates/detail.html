@@ -8,7 +8,7 @@
 		{% module AnswerFormatter(answer) %}
 	{% end %}
 
-	{% module PageFormatter(current_page) %}
+	{% module PageFormatter(current_page, total_page) %}
 
 	<article class="main-article question-answer">
 		<h2 class="article-title">
@@ -17,7 +17,7 @@
 
 		<form action="/answer" method="POST">
 			{% raw xsrf_form_html() %}
-			<textarea name="answer"></textarea>
+			<textarea name="body"></textarea>
 			<button type="submit">提交</button>
 		</form>
 	</article>

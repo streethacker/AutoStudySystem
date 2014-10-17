@@ -23,6 +23,12 @@
 				<label class="">邮箱</label><div class="error">*</div>
 				<input type="mail" id="email" name="email" />
 			</div>
+
+			{% if status == 3 %}
+			<div class="login-group">
+			{# username already exists#}
+			</div>
+			{% end %}
 			<div class="login-submit">
 				<button type="submit">注册</button>
 			</div>

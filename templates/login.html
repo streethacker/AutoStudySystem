@@ -12,7 +12,24 @@
             </div>                                                                            
             <div class="login-group">                                                         
                 <label id="login_pwd">密码 </label><span></span><input type="password" id="user_pwd" name="password" />    
-            </div>                                                                            
+            </div>
+			
+			{% if status == 1 %}
+			<div class="login-group">
+			{# username does not exist#}
+			</div>
+			{% end %}
+
+			{% if status == 2 %}
+			<div class="login-group">
+			{# password incorrect #}
+			</div>
+			{% end %}
+
+			{% if status == 4 %}
+			{# register successfully, redirect from /auth/register #}
+			{% end %}
+
             <div class="login-submit">                                                        
                 <button type="submit">登录</button>                                           
             </div>                                                                            
