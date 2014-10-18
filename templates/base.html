@@ -37,7 +37,7 @@
 			<div id="user-info">
 				{% if current_user %}
 					<a>
-						<img class="excavator" src="{{ static_url(current_user['sculpture']) }}" />
+						<img class="avatar" src="{{ static_url(current_user['sculpture']) }}" />
 						<span class="name">{{ current_user['username'] }}</span>
 						<div id="user-widget">
 							<a href="/auth/register">帐号设置</a>

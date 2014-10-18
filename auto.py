@@ -268,6 +268,9 @@ class AnswerHandler(BaseHandler):
 		total_records = yield self.db["answers"].find({"date":{"$gt":_date_point}}).count()
 		total_page = total_records % DEFAULT_PAGESIZE + total_records / DEFAULT_PAGESIZE
 
+		if total_page < current_page:
+			total_page = current_page
+
 		_cursor = self.db["answers"].find({"date":{"$gt":_date_point}}).\
 				sort("date", -1).\
 				skip((int(current_page)-1) * DEFAULT_PAGESIZE).\
