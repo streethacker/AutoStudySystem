@@ -17,8 +17,8 @@
 			<form action="/result" method="POST">
 				{% raw xsrf_form_html() %}
 				
-				{% for test in tests %}
-					{% module TestFormatter(test) %}
+				{% for (index, test) in enumerate(tests, 1) %}
+					{% module TestFormatter(index, test) %}
 				{% end %}
 
 				<div class="login-submit">

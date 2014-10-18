@@ -4,6 +4,7 @@
 import os
 import hashlib
 import motor
+import pymongo
 import bson
 import uuid
 import base64
@@ -53,6 +54,7 @@ class Application(tornado.web.Application):
 				"ExamFormatter" : ExamModule,
 				"AnswerFormatter" : AnswerModule,
 				"TestFormatter" : TestModule,
+				"UserinfoFormatter" : UserinfoModule,
 			},
 
 			login_url = "/auth/login",
@@ -65,7 +67,7 @@ class Application(tornado.web.Application):
 class BaseHandler(tornado.web.RequestHandler):
 	@tornado.gen.coroutine
 	def prepare(self):
-		DEFAULT_TIMEDELTA_BY_DAYS = 1
+		DEFAULT_TIMEDELTA_BY_DAYS = 3
 
 		username = self.get_secure_cookie("username")
 
@@ -73,7 +75,7 @@ class BaseHandler(tornado.web.RequestHandler):
 			self._current_user = yield self.db["users"].find_one({"username":username})
 	
 		_date_point = datetime.datetime.now() - datetime.timedelta(days=DEFAULT_TIMEDELTA_BY_DAYS)
-		cursor = self.db["blogs"].find({"date": {"$gt":_date_point}}).sort("views", -1).limit(3)
+		cursor = self.db["blogs"].find({"date": {"$gt":_date_point}}).sort("views", pymongo.DESCENDING).limit(3)
 		self._elites = yield cursor.to_list(length=3)
 
 	@property
@@ -118,7 +120,6 @@ class LoginHandler(BaseHandler):
 
 		self.set_secure_cookie("username", username, expires_days=1)
 
-		logging.warning("arguments: %s" % self.request.arguments)
 		self.redirect(self.get_argument("next", "/"))
 
 class RegisterHandler(BaseHandler):
@@ -132,28 +133,28 @@ class RegisterHandler(BaseHandler):
 		password = self._resove_pwd(self.get_argument("password"))
 		email = self.get_argument("email")
 
-		userinfo = yield self.db["users"].find({"username":username})
+		userinfo = yield self.db["users"].find_one({"username":username})
 
 		if userinfo:
 			self.redirect("/auth/register?" + urllib.urlencode(dict(status=3)))  #username already exists
 			return
 		
-			_entry = {
-				"username" : username,
-				"password" : password,
-				"email" : email,
-				"sculpture" : "img/avatar.png",
-				"role" : 0,
-				"blog_focuses" : list(),
-				"quiz_focused" : list(),
-			}
+		_entry = {
+			"username" : username,
+			"password" : password,
+			"email" : email,
+			"sculpture" : "img/avatar.png",
+			"role" : 0,
+			"blog_focuses" : list(),
+			"quiz_focused" : list(),
+		}
 
 		_id = yield self.db["users"].insert(_entry)
 
 		if not isinstance(_id, ObjectId):
 			raise tornado.web.HTTPError(500)
 
-		self.redirect("/auth/login?" + urllib.urlencode(dict(status=4)))  #register successfully, status=4, redirect to login
+		self.redirect("/auth/login") #register successfully, redirect to login
 
 class LogoutHandler(BaseHandler):
 	def get(self):
@@ -173,7 +174,7 @@ class RootHandler(BaseHandler):
 		total_page = total_records % DEFAULT_PAGESIZE + total_records / DEFAULT_PAGESIZE
 
 		_cursor = self.db["blogs"].find({"date":{"$gt":_date_point}}).\
-				sort("date", -1).\
+				sort("date", pymongo.DESCENDING).\
 				skip((int(current_page)-1) * DEFAULT_PAGESIZE).\
 				limit(DEFAULT_PAGESIZE)
 		
@@ -203,7 +204,7 @@ class DizHandler(BaseHandler):
 	def get(self):
 		DEFAULT_PAGESIZE = 15
 		DEFAULT_TIMEDELTA_BY_DAYS = 10
-		
+
 		current_page = self.get_argument("page_id", 1)
 		_date_point = datetime.datetime.now() - datetime.timedelta(days=DEFAULT_TIMEDELTA_BY_DAYS)
 
@@ -211,7 +212,7 @@ class DizHandler(BaseHandler):
 		total_page = total_records % DEFAULT_PAGESIZE + total_records / DEFAULT_PAGESIZE
 
 		_cursor = self.db["quizzes"].find({"date":{"$gt":_date_point}}).\
-				sort("date", -1).\
+				sort("date", pymongo.DESCENDING).\
 				skip((int(current_page)-1) * DEFAULT_PAGESIZE).\
 				limit(DEFAULT_PAGESIZE)
 
@@ -228,9 +229,10 @@ class DizHandler(BaseHandler):
 	@tornado.gen.coroutine
 	def post(self):
 		_entry = {
+			"title": self.get_argument("title"),
 			"body" : self.get_argument("body"),
 			"date" : datetime.datetime.now(),
-			"from" : self.current_user["_id"],
+			"from" : self.current_user["username"],
 		}
 
 		_id = yield self.db["quizzes"].insert(_entry)
@@ -248,8 +250,12 @@ class AnswerHandler(BaseHandler):
 
 	@property
 	def quiz_id(self):
-		if not self._quiz_id:
-			self._quiz_id = self.get_argument("quiz_id")
+		#if quiz_id is found in query string
+		#then return it, and set/reset the Cookie
+		#with the new one
+		_flag = self.get_argument("quiz_id", None)
+		if _flag:
+			self._quiz_id = _flag
 			self.set_secure_cookie("quiz_id", self._quiz_id)
 		return self._quiz_id
 
@@ -265,14 +271,14 @@ class AnswerHandler(BaseHandler):
 
 		_date_point = datetime.datetime.now() - datetime.timedelta(days=DEFAULT_TIMEDELTA_BY_DAYS)
 
-		total_records = yield self.db["answers"].find({"date":{"$gt":_date_point}}).count()
+		total_records = yield self.db["answers"].find({"to":ObjectId(self.quiz_id),"date":{"$gt":_date_point}}).count()
 		total_page = total_records % DEFAULT_PAGESIZE + total_records / DEFAULT_PAGESIZE
 
-		if total_page < current_page:
-			total_page = current_page
+		#if total_page < current_page:
+		#	total_page = current_page
 
-		_cursor = self.db["answers"].find({"date":{"$gt":_date_point}}).\
-				sort("date", -1).\
+		_cursor = self.db["answers"].find({"to":ObjectId(self.quiz_id),"date":{"$gt":_date_point}}).\
+				sort("date", pymongo.DESCENDING).\
 				skip((int(current_page)-1) * DEFAULT_PAGESIZE).\
 				limit(DEFAULT_PAGESIZE)
 
@@ -289,7 +295,7 @@ class AnswerHandler(BaseHandler):
 	@tornado.gen.coroutine
 	def post(self):
 		_entry = {
-			"from" : self.current_user["_id"],
+			"from" : self.current_user["username"],
 			"to" : ObjectId(self.quiz_id),
 			"body" : self.get_argument("body"),
 			"praise" : 0,
@@ -304,10 +310,50 @@ class AnswerHandler(BaseHandler):
 		self.redirect("/answer")
 
 class ExamHandler(BaseHandler):
-	pass
+	@tornado.web.authenticated
+	@tornado.gen.coroutine
+	def get(self):
+		DEFAULT_PAGESIZE = 10
+		DEFAULT_TIMEDELTA_BY_DAYS = 3
+
+		current_page = self.get_argument("page_id", 1)
+
+		_date_point = datetime.datetime.now() - datetime.timedelta(days=DEFAULT_TIMEDELTA_BY_DAYS)
+		total_records = yield self.db["exams"].find({"date":{"$gt":_date_point}}).count()
+		total_page = total_records % DEFAULT_PAGESIZE + total_records / DEFAULT_PAGESIZE
+
+		_cursor = self.db["exams"].find({"date":{"$gt":_date_point}}).\
+				sort("date", pymongo.DESCENDING).\
+				skip((int(current_page)-1) * DEFAULT_PAGESIZE).\
+				limit(DEFAULT_PAGESIZE)
+
+		exams = yield _cursor.to_list(length=DEFAULT_PAGESIZE)
+
+		self.render("exam.html",
+			elites = self.elites,
+			current_page = current_page,
+			total_page = total_page,
+			exams = exams,
+		)
 
 class PaperHandler(BaseHandler):
-	pass
+	@tornado.web.authenticated
+	@tornado.gen.coroutine
+	def get(self):
+		paper_id = self.get_argument("paper_id")
+		exam = yield self.db["exams"].find_one({"_id":ObjectId(paper_id)})
+	
+		#exam["test"] contains a list _id refer to the issues
+		#query with $in, which will iterate all these _ids
+		_cursor = self.db["issues"].find({"_id":{"$in":exam["tests"]}})
+
+		tests = yield _cursor.to_list(length=30)
+		
+		self.render("paper.html",
+			elites = self.elites,
+			exam = exam,
+			tests = tests,
+		)
 
 class ResultHandler(BaseHandler):
 	pass
@@ -337,8 +383,12 @@ class AnswerModule(tornado.web.UIModule):
 		return self.render_string("modules/answer.html", answer=answer)
 
 class TestModule(tornado.web.UIModule):
-	pass
+	def render(self, index, test):
+		return self.render_string("modules/stem.html", index=index, test=test)
 
+class UserinfoModule(tornado.web.UIModule):
+	def render(self):
+		return self.render_string("modules/userinfo.html")
 
 if __name__ == "__main__":
 	tornado.options.parse_command_line()

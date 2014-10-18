@@ -1,9 +1,9 @@
 <div class="exam-group">
-	<p>{{ test['stem'] }}</p>
+	<p>{{ index }}. {{ test['stem'] }}</p>
 	<div class="exam-group-select">
 		<ul>
 		{% for (option, content) in test['options'].iteritems() %}
-			<li><input type="radio" value="{{ option }}" name="select" />{{ option:content }}</li>
+			<li><input type="radio" value="{{ option }}" name="select" />{{ option }}: {{ content }}</li>
 		{% end %}
 		</ul>
 	</div>

@@ -12,9 +12,12 @@
 		<h2 class="article-title">
 			<span title="提问">提问</span>提问：
 		</h2>
-
+		
 		<form action="/diz" method="POST">
 			{% raw xsrf_form_html() %}
+			<div class="asking-title">
+				<h3>主题：</h3><input id="asking-title" name="title" type="text" />
+			</div>
 			<textarea name="body"></textarea>
 			<button type="submit">提交</button>
 		</form>

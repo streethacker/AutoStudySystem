@@ -1,5 +1,9 @@
 <article class="main-article">
 	<header class="article-header">
+		<h2 class="article-title">
+			<a href="{{ '/answer?quiz_id=%s' % quiz['_id'] }}">{{ quiz['title'] }}</a>
+		</h2>
+
 		<div class="article-meta">
 			<time class="article-data">{{ quiz['date'].strftime('%Y-%m-%d %H:%M') }}</time>
      		<span>•</span>
@@ -15,7 +19,7 @@
 		{% if request.path == '/answer' %}
 		<a href="/diz" class="more-link">返回</a>
 		{% else %}
-		<a href="{{ '/answer?quiz_id=%s' % quiz['_id'] }}" class="more-link">察看详情</a>
+		<a href="{{ '/answer?quiz_id=%s' % quiz['_id'] }}" class="more-link">查看详情</a>
 		{% end %}
 	</footer>
 </article>
