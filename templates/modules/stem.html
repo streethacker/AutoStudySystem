@@ -2,7 +2,7 @@
 	<p>{{ index }}. {{ test['stem'] }}</p>
 	<div class="exam-group-select">
 		<ul>
-		{% for (option, content) in test['options'].iteritems() %}
+		{% for (option, content) in sorted(test['options'].iteritems(), key=lambda x: x[0]) %}
 			<li><input type="radio" value="{{ option }}" name="select" />{{ option }}: {{ content }}</li>
 		{% end %}
 		</ul>
