@@ -67,7 +67,7 @@ class Application(tornado.web.Application):
 class BaseHandler(tornado.web.RequestHandler):
 	@tornado.gen.coroutine
 	def prepare(self):
-		DEFAULT_TIMEDELTA_BY_DAYS = 3
+		DEFAULT_TIMEDELTA_BY_DAYS = 10
 
 		username = self.get_secure_cookie("username")
 
@@ -98,13 +98,13 @@ class BaseHandler(tornado.web.RequestHandler):
 
 class LoginHandler(BaseHandler):
 	def get(self):
-		status = self.get_argument("status", None)
+		status = self.get_argument("status", "")
 		self.render("login.html", elites=self.elites, status=status)
 
 	@tornado.gen.coroutine
 	def post(self):
-		username = self.get_argument("username")
-		password = self._resove_pwd(self.get_argument("password"))
+		username = self.get_argument("username", "")
+		password = self._resove_pwd(self.get_argument("password", ""))
 
 		userinfo = yield self.db["users"].find_one({"username":username})
 
@@ -124,14 +124,14 @@ class LoginHandler(BaseHandler):
 
 class RegisterHandler(BaseHandler):
 	def get(self):
-		status = self.get_argument("status", None)
+		status = self.get_argument("status", "")
 		self.render("register.html", elites=self.elites, status=status)
 
 	@tornado.gen.coroutine
 	def post(self):
-		username = self.get_argument("username")
-		password = self._resove_pwd(self.get_argument("password"))
-		email = self.get_argument("email")
+		username = self.get_argument("username", "")
+		password = self._resove_pwd(self.get_argument("password", ""))
+		email = self.get_argument("email", "")
 
 		userinfo = yield self.db["users"].find_one({"username":username})
 
@@ -190,7 +190,7 @@ class RootHandler(BaseHandler):
 class BlogHandler(BaseHandler):
 	@tornado.gen.coroutine
 	def get(self):
-		blog_id = self.get_argument("blog_id")
+		blog_id = self.get_argument("blog_id", "")
 
 		article = yield self.db["blogs"].find_one({"_id":ObjectId(blog_id)})
 		self.render("blog.html", elites=self.elites, article=article)
@@ -229,8 +229,8 @@ class DizHandler(BaseHandler):
 	@tornado.gen.coroutine
 	def post(self):
 		_entry = {
-			"title": self.get_argument("title"),
-			"body" : self.get_argument("body"),
+			"title": self.get_argument("title", ""),
+			"body" : self.get_argument("body", ""),
 			"date" : datetime.datetime.now(),
 			"from" : self.current_user["username"],
 		}
@@ -253,7 +253,7 @@ class AnswerHandler(BaseHandler):
 		#if quiz_id is found in query string
 		#then return it, and set/reset the Cookie
 		#with the new one
-		_flag = self.get_argument("quiz_id", None)
+		_flag = self.get_argument("quiz_id", "")
 		if _flag:
 			self._quiz_id = _flag
 			self.set_secure_cookie("quiz_id", self._quiz_id)
@@ -297,7 +297,7 @@ class AnswerHandler(BaseHandler):
 		_entry = {
 			"from" : self.current_user["username"],
 			"to" : ObjectId(self.quiz_id),
-			"body" : self.get_argument("body"),
+			"body" : self.get_argument("body", ""),
 			"praise" : 0,
 			"date" : datetime.datetime.now(),
 		}
@@ -340,7 +340,7 @@ class PaperHandler(BaseHandler):
 	@tornado.web.authenticated
 	@tornado.gen.coroutine
 	def get(self):
-		paper_id = self.get_argument("paper_id")
+		paper_id = self.get_argument("paper_id", 1)
 		exam = yield self.db["exams"].find_one({"_id":ObjectId(paper_id)})
 	
 		#exam["test"] contains a list _id refer to the issues
@@ -363,17 +363,19 @@ class ResultHandler(BaseHandler):
 	@tornado.web.authenticated
 	@tornado.gen.coroutine
 	def post(self):
-		result = {}
+		result = []
+		
 		try:
 			self.request.arguments.pop("_xsrf")
 		except KeyError:
 			logging.warning("error pop operation")
 
-		for (key, checked) in self.request.arguments.iteritems():
-			_selected_option, _id = checked[0], checked[1]
-			_correspond_test = yield self.db["issues"].find_one({"_id":ObjectId(_id)})
+		for (_key, _checked_pairs) in self.request.arguments.iteritems():
+			_checked_option, _id = _checked_pairs[0], _checked_pairs[1]
+			_issue = yield self.db["issues"].find_one({"_id":ObjectId(_id)})
 
-			result[key] = True if _correspond_test["correct"] == _selected_option else False
+			if _issue["correct"] == _checked_option:
+				result.append(_key)
 
 class EliteModule(tornado.web.UIModule):
 	def render(self, elite):
