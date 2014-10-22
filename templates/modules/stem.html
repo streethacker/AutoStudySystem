@@ -3,8 +3,9 @@
 	<div class="exam-group-select">
 		<ul>
 		{% for (option, content) in sorted(test['options'].iteritems(), key=lambda x: x[0]) %}
-			<li><input type="radio" value="{{ option }}" name="select" />{{ option }}: {{ content }}</li>
+			<li><input type="radio" value="{{ option }}" name="{{ 'select%s' % index }}" />{{ option }}: {{ content }}</li>
 		{% end %}
+			<li><input type="hidden" value="{{ test['_id'] }}" name="{{ 'select%s' % index }}" />
 		</ul>
 	</div>
 </div>

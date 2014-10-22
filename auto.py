@@ -314,7 +314,7 @@ class ExamHandler(BaseHandler):
 	@tornado.gen.coroutine
 	def get(self):
 		DEFAULT_PAGESIZE = 10
-		DEFAULT_TIMEDELTA_BY_DAYS = 3
+		DEFAULT_TIMEDELTA_BY_DAYS = 30
 
 		current_page = self.get_argument("page_id", 1)
 
@@ -348,15 +348,32 @@ class PaperHandler(BaseHandler):
 		_cursor = self.db["issues"].find({"_id":{"$in":exam["tests"]}})
 
 		tests = yield _cursor.to_list(length=30)
-		
+
 		self.render("paper.html",
 			elites = self.elites,
 			exam = exam,
 			tests = tests,
 		)
 
+		exam["views"] += 1
+		self.db["exams"].save(exam)
+		
+
 class ResultHandler(BaseHandler):
-	pass
+	@tornado.web.authenticated
+	@tornado.gen.coroutine
+	def post(self):
+		result = {}
+		try:
+			self.request.arguments.pop("_xsrf")
+		except KeyError:
+			logging.warning("error pop operation")
+
+		for (key, checked) in self.request.arguments.iteritems():
+			_selected_option, _id = checked[0], checked[1]
+			_correspond_test = yield self.db["issues"].find_one({"_id":ObjectId(_id)})
+
+			result[key] = True if _correspond_test["correct"] == _selected_option else False
 
 class EliteModule(tornado.web.UIModule):
 	def render(self, elite):
