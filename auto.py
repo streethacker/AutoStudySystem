@@ -88,13 +88,27 @@ class BaseHandler(tornado.web.RequestHandler):
 			raise tornado.web.HTTPError(500)
 		return self._elites
 
-	def _resove_pwd(self, password, algorithms="md5"):
+	def _resolve_pwd(self, password, algorithms="md5"):
 		try:
 			encrypt = getattr(hashlib, algorithms)(password).hexdigest()
 		except AttributeError:
 			raise tornado.web.HTTPError(500)
 
 		return encrypt
+
+	def _resolve_page(self, pagesize, records):
+		current_page = self.get_argument("page_id", 1)
+		if records == 0:
+			current_page = total_page = 0
+			return (current_page, total_page)
+
+		if records < pagesize:
+			current_page = total_page = 1
+			return (current_page, total_page)
+
+		if records % pagesize > 0:
+			total_page = records / pagesize + 1
+			return (current_page, total_page)
 
 class LoginHandler(BaseHandler):
 	def get(self):
@@ -104,22 +118,21 @@ class LoginHandler(BaseHandler):
 	@tornado.gen.coroutine
 	def post(self):
 		username = self.get_argument("username", "")
-		password = self._resove_pwd(self.get_argument("password", ""))
+		password = self._resolve_pwd(self.get_argument("password", ""))
 
-		userinfo = yield self.db["users"].find_one({"username":username})
+		_user_info = yield self.db["users"].find_one({"username":username})
 
-		if not userinfo:
+		if not _user_info:
 			self.redirect("/auth/login?" + urllib.urlencode(dict(status=1)))  #username does not exist
 			return
 
-		_auth_flag = True if userinfo["password"] == password else False
+		_auth_flag = True if _user_info["password"] == password else False
 
 		if not _auth_flag:
 			self.redirect("/auth/login?" + urllib.urlencode(dict(status=2)))  #password incorrect
 			return
 
 		self.set_secure_cookie("username", username, expires_days=1)
-
 		self.redirect(self.get_argument("next", "/"))
 
 class RegisterHandler(BaseHandler):
@@ -130,12 +143,12 @@ class RegisterHandler(BaseHandler):
 	@tornado.gen.coroutine
 	def post(self):
 		username = self.get_argument("username", "")
-		password = self._resove_pwd(self.get_argument("password", ""))
+		password = self._resolve_pwd(self.get_argument("password", ""))
 		email = self.get_argument("email", "")
 
-		userinfo = yield self.db["users"].find_one({"username":username})
+		_user_info = yield self.db["users"].find_one({"username":username})
 
-		if userinfo:
+		if _user_info:
 			self.redirect("/auth/register?" + urllib.urlencode(dict(status=3)))  #username already exists
 			return
 		
@@ -167,11 +180,10 @@ class RootHandler(BaseHandler):
 		DEFAULT_PAGESIZE = 10
 		DEFAULT_TIMEDELTA_BY_DAYS = 10 
 		
-		current_page = self.get_argument("page_id", 1)
 		_date_point = datetime.datetime.now() - datetime.timedelta(days=DEFAULT_TIMEDELTA_BY_DAYS)
-
 		total_records = yield self.db["blogs"].find({"date":{"$gt":_date_point}}).count()
-		total_page = total_records % DEFAULT_PAGESIZE + total_records / DEFAULT_PAGESIZE
+
+		current_page, total_page = self._resolve_page(DEFAULT_PAGESIZE, total_records)
 
 		_cursor = self.db["blogs"].find({"date":{"$gt":_date_point}}).\
 				sort("date", pymongo.DESCENDING).\
@@ -202,14 +214,13 @@ class DizHandler(BaseHandler):
 	@tornado.web.authenticated
 	@tornado.gen.coroutine
 	def get(self):
-		DEFAULT_PAGESIZE = 15
+		DEFAULT_PAGESIZE = 10
 		DEFAULT_TIMEDELTA_BY_DAYS = 10
 
-		current_page = self.get_argument("page_id", 1)
 		_date_point = datetime.datetime.now() - datetime.timedelta(days=DEFAULT_TIMEDELTA_BY_DAYS)
-
 		total_records = yield self.db["quizzes"].find({"date":{"$gt":_date_point}}).count()
-		total_page = total_records % DEFAULT_PAGESIZE + total_records / DEFAULT_PAGESIZE
+
+		current_page, total_page = self._resolve_page(DEFAULT_PAGESIZE, total_records)
 
 		_cursor = self.db["quizzes"].find({"date":{"$gt":_date_point}}).\
 				sort("date", pymongo.DESCENDING).\
@@ -267,15 +278,10 @@ class AnswerHandler(BaseHandler):
 
 		quiz = yield self.db["quizzes"].find_one({"_id":ObjectId(self.quiz_id)})
 
-		current_page = self.get_argument("current_page", 1)
-
 		_date_point = datetime.datetime.now() - datetime.timedelta(days=DEFAULT_TIMEDELTA_BY_DAYS)
-
 		total_records = yield self.db["answers"].find({"to":ObjectId(self.quiz_id),"date":{"$gt":_date_point}}).count()
-		total_page = total_records % DEFAULT_PAGESIZE + total_records / DEFAULT_PAGESIZE
 
-		#if total_page < current_page:
-		#	total_page = current_page
+		current_page, total_page = self._resolve_page(DEFAULT_PAGESIZE, total_records)
 
 		_cursor = self.db["answers"].find({"to":ObjectId(self.quiz_id),"date":{"$gt":_date_point}}).\
 				sort("date", pymongo.DESCENDING).\
@@ -316,11 +322,10 @@ class ExamHandler(BaseHandler):
 		DEFAULT_PAGESIZE = 10
 		DEFAULT_TIMEDELTA_BY_DAYS = 30
 
-		current_page = self.get_argument("page_id", 1)
-
 		_date_point = datetime.datetime.now() - datetime.timedelta(days=DEFAULT_TIMEDELTA_BY_DAYS)
 		total_records = yield self.db["exams"].find({"date":{"$gt":_date_point}}).count()
-		total_page = total_records % DEFAULT_PAGESIZE + total_records / DEFAULT_PAGESIZE
+
+		current_page, total_page = self._resolve_page(DEFAULT_PAGESIZE, total_records)
 
 		_cursor = self.db["exams"].find({"date":{"$gt":_date_point}}).\
 				sort("date", pymongo.DESCENDING).\
