@@ -20,10 +20,15 @@ import tornado.options
 from bson.objectid import ObjectId
 from tornado.options import define, options
 
+logging.basicConfig(level=logging.INFO)
+
 define("port", default=8000, help="server run on the given port", type=int)
 define("db_host", default="localhost", help="database server run on the db_host", type=str)
 define("db_port", default=27017, help="database server run on the db_port", type=int)
 define("db_name", default="testdb", help="database to be used", type=str)
+
+#cookie_secret = base64.b64encode(uuid.uuid4().bytes + uuid.uuid4().bytes)
+#'ZD9ESz1CTLmFwcNmUCU2YecmcGot8U8tqTVm4aZrwI4='
 
 class Application(tornado.web.Application):
 	def __init__(self):
@@ -43,7 +48,7 @@ class Application(tornado.web.Application):
 		settings = dict(
 			template_path = os.path.join(os.path.dirname(__file__), "templates"),
 			static_path = os.path.join(os.path.dirname(__file__), "static"),
-			cookie_secret = "__TODO_:_GENERATE_YOUR_OWN_RANDOM_NUMBER_HERE__",
+			cookie_secret = "ZD9ESz1CTLmFwcNmUCU2YecmcGot8U8tqTVm4aZrwI4=",
 			xsrf_cookies = True,
 
 			ui_modules = {
@@ -85,6 +90,7 @@ class BaseHandler(tornado.web.RequestHandler):
 	@property
 	def elites(self):
 		if not hasattr(self, '_elites'):
+			logging.error("No _elites attribute has been found.")
 			raise tornado.web.HTTPError(500)
 		return self._elites
 
@@ -92,6 +98,7 @@ class BaseHandler(tornado.web.RequestHandler):
 		try:
 			encrypt = getattr(hashlib, algorithms)(password).hexdigest()
 		except AttributeError:
+			logging.error("Wrong algorithm has been given@BaseHandler._resolve_pwd().")
 			raise tornado.web.HTTPError(500)
 
 		return encrypt
@@ -102,13 +109,36 @@ class BaseHandler(tornado.web.RequestHandler):
 			current_page = total_page = 0
 			return (current_page, total_page)
 
-		if records < pagesize:
+		if records <= pagesize:
 			current_page = total_page = 1
 			return (current_page, total_page)
 
 		if records % pagesize > 0:
 			total_page = records / pagesize + 1
-			return (current_page, total_page)
+			return (int(current_page), total_page)  #we ensure current_page is an integer
+
+	def _resolve_cursor(self, **kwargs):
+		coll = kwargs.get("coll", "")
+		rule = kwargs.get("rule", {})
+		sort = kwargs.get("sort", ())
+		current_page, pagesize = kwargs.get("current_page", 1), kwargs.get("pagesize", 0)
+
+		#evil trick: if no records found, the current_page would be 0
+		#but the skip(param) would fail, since param must be >= 0
+		#so we set the current_page 1, mandatorily, so that nothing would be skipped.
+		if current_page < 1:
+			#here we set logging in order to monitor too small current_page if occurs
+			#because too small current_page like -1 is strange and maybe somethin wrong.
+			logging.warning("Too small current_page[%s] has been catched." % current_page)
+			current_page = 1
+
+		try:
+			_cursor = self.db[coll].find(rule).sort(*sort).skip((current_page-1)*pagesize).limit(pagesize)
+		except ValueError:
+			logging.error("[ValueError] raised@BaseHandler._resolve_cursor().")
+			raise tornado.we.HTTPError(500)
+
+		return _cursor
 
 class LoginHandler(BaseHandler):
 	def get(self):
@@ -165,6 +195,7 @@ class RegisterHandler(BaseHandler):
 		_id = yield self.db["users"].insert(_entry)
 
 		if not isinstance(_id, ObjectId):
+			logging.error("Fail to insert document@RegisterHandler.post().")
 			raise tornado.web.HTTPError(500)
 
 		self.redirect("/auth/login") #register successfully, redirect to login
@@ -184,12 +215,16 @@ class RootHandler(BaseHandler):
 		total_records = yield self.db["blogs"].find({"date":{"$gt":_date_point}}).count()
 
 		current_page, total_page = self._resolve_page(DEFAULT_PAGESIZE, total_records)
+	
+		_params = {
+			"coll": "blogs", 
+			"rule": {"date":{"$gt":_date_point}},
+			"sort": ("date", pymongo.DESCENDING),
+			"current_page": current_page,
+			"pagesize": DEFAULT_PAGESIZE,
+		}
+		_cursor = self._resolve_cursor(**_params)
 
-		_cursor = self.db["blogs"].find({"date":{"$gt":_date_point}}).\
-				sort("date", pymongo.DESCENDING).\
-				skip((int(current_page)-1) * DEFAULT_PAGESIZE).\
-				limit(DEFAULT_PAGESIZE)
-		
 		articles = yield _cursor.to_list(length=DEFAULT_PAGESIZE)
 
 		self.render("index.html", 
@@ -214,7 +249,7 @@ class DizHandler(BaseHandler):
 	@tornado.web.authenticated
 	@tornado.gen.coroutine
 	def get(self):
-		DEFAULT_PAGESIZE = 10
+		DEFAULT_PAGESIZE = 8
 		DEFAULT_TIMEDELTA_BY_DAYS = 10
 
 		_date_point = datetime.datetime.now() - datetime.timedelta(days=DEFAULT_TIMEDELTA_BY_DAYS)
@@ -222,10 +257,14 @@ class DizHandler(BaseHandler):
 
 		current_page, total_page = self._resolve_page(DEFAULT_PAGESIZE, total_records)
 
-		_cursor = self.db["quizzes"].find({"date":{"$gt":_date_point}}).\
-				sort("date", pymongo.DESCENDING).\
-				skip((int(current_page)-1) * DEFAULT_PAGESIZE).\
-				limit(DEFAULT_PAGESIZE)
+		_params = {
+			"coll": "quizzes",
+			"rule": {"date":{"$gt":_date_point}},
+			"sort": ("date", pymongo.DESCENDING),
+			"current_page": current_page,
+			"pagesize": DEFAULT_PAGESIZE,
+		}
+		_cursor = self._resolve_cursor(**_params)
 
 		quizzes = yield _cursor.to_list(length=DEFAULT_PAGESIZE)
 
@@ -249,6 +288,7 @@ class DizHandler(BaseHandler):
 		_id = yield self.db["quizzes"].insert(_entry)
 		
 		if not isinstance(_id, ObjectId):
+			logging.error("Fail to insert document@DizHandler.post().")
 			raise tornado.web.HTTPError(500)
 
 		self.redirect("/diz")
@@ -274,7 +314,7 @@ class AnswerHandler(BaseHandler):
 	@tornado.gen.coroutine
 	def get(self):
 		DEFAULT_PAGESIZE = 10
-		DEFAULT_TIMEDELTA_BY_DAYS = 3
+		DEFAULT_TIMEDELTA_BY_DAYS = 10
 
 		quiz = yield self.db["quizzes"].find_one({"_id":ObjectId(self.quiz_id)})
 
@@ -282,11 +322,15 @@ class AnswerHandler(BaseHandler):
 		total_records = yield self.db["answers"].find({"to":ObjectId(self.quiz_id),"date":{"$gt":_date_point}}).count()
 
 		current_page, total_page = self._resolve_page(DEFAULT_PAGESIZE, total_records)
-
-		_cursor = self.db["answers"].find({"to":ObjectId(self.quiz_id),"date":{"$gt":_date_point}}).\
-				sort("date", pymongo.DESCENDING).\
-				skip((int(current_page)-1) * DEFAULT_PAGESIZE).\
-				limit(DEFAULT_PAGESIZE)
+		
+		_params = {
+			"coll": "answers", 
+			"rule": {"to":ObjectId(self.quiz_id), "date":{"$gt":_date_point}},
+			"sort": ("date", pymongo.DESCENDING),
+			"current_page": current_page,
+			"pagesize": DEFAULT_PAGESIZE,
+		}
+		_cursor = self._resolve_cursor(**_params)
 
 		answers = yield _cursor.to_list(length=DEFAULT_PAGESIZE)
 
@@ -311,6 +355,7 @@ class AnswerHandler(BaseHandler):
 		_id = yield self.db["answers"].insert(_entry)
 
 		if not isinstance(_id, ObjectId):
+			logging.error("Fail to insert document@AnswerHandler.post().")
 			raise tornado.web.HTTPError(500)
 
 		self.redirect("/answer")
@@ -327,10 +372,14 @@ class ExamHandler(BaseHandler):
 
 		current_page, total_page = self._resolve_page(DEFAULT_PAGESIZE, total_records)
 
-		_cursor = self.db["exams"].find({"date":{"$gt":_date_point}}).\
-				sort("date", pymongo.DESCENDING).\
-				skip((int(current_page)-1) * DEFAULT_PAGESIZE).\
-				limit(DEFAULT_PAGESIZE)
+		_params = {
+			"coll": "exams",
+			"rule": {"date":{"$gt":_date_point}},
+			"sort": ("date", pymongo.DESCENDING),
+			"current_page": current_page,
+			"pagesize": DEFAULT_PAGESIZE,
+		}
+		_cursor = self._resolve_cursor(**_params)
 
 		exams = yield _cursor.to_list(length=DEFAULT_PAGESIZE)
 
@@ -362,7 +411,6 @@ class PaperHandler(BaseHandler):
 
 		exam["views"] += 1
 		self.db["exams"].save(exam)
-		
 
 class ResultHandler(BaseHandler):
 	@tornado.web.authenticated
@@ -373,7 +421,7 @@ class ResultHandler(BaseHandler):
 		try:
 			self.request.arguments.pop("_xsrf")
 		except KeyError:
-			logging.warning("error pop operation")
+			logging.warning("No _xsrf tag in request.argument@ResultHandler.post().")
 
 		for (_key, _checked_pairs) in self.request.arguments.iteritems():
 			_checked_option, _id = _checked_pairs[0], _checked_pairs[1]
