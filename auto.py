@@ -36,6 +36,7 @@ class Application(tornado.web.Application):
 			(r"/auth/login", LoginHandler),
 			(r"/auth/register", RegisterHandler),
 			(r"/auth/logout", LogoutHandler),
+			(r"/auth/infoset", InfosetHandler),
 			(r"/", RootHandler),
 			(r"/blog", BlogHandler),
 			(r"/diz", DizHandler),
@@ -203,6 +204,31 @@ class RegisterHandler(BaseHandler):
 class LogoutHandler(BaseHandler):
 	def get(self):
 		self.clear_cookie("username")
+		self.redirect("/auth/login")
+
+class InfosetHandler(BaseHandler):
+	@tornado.web.authenticated
+	def get(self):
+		status = self.get_argument("status", "")
+		self.render("infoset.html", elites=self.elites, status=status)
+
+	@tornado.web.authenticated
+	@tornado.gen.coroutine
+	def post(self):
+		oldpwd = self._resolve_pwd(self.get_argument("oldpwd", ""))
+		password = self._resolve_pwd(self.get_argument("password", ""))
+
+		#check if the old password valid
+		_user_info = yield self.db["users"].find_one({"username":self.current_user["username"], "password":oldpwd})
+
+		if not _user_info:
+			self.redirect("/auth/infoset?"+urllib.urlencode(dict(status=4)))
+			return
+
+		#save the new password 
+		_user_info["password"] = password
+		self.db["users"].save(_user_info)
+
 		self.redirect("/auth/login")
 
 class RootHandler(BaseHandler):
@@ -416,7 +442,8 @@ class ResultHandler(BaseHandler):
 	@tornado.web.authenticated
 	@tornado.gen.coroutine
 	def post(self):
-		result = []
+		result = [] #result list of correct answers
+		total = 0  #a counter of total questions
 		
 		try:
 			self.request.arguments.pop("_xsrf")
@@ -424,11 +451,26 @@ class ResultHandler(BaseHandler):
 			logging.warning("No _xsrf tag in request.argument@ResultHandler.post().")
 
 		for (_key, _checked_pairs) in self.request.arguments.iteritems():
-			_checked_option, _id = _checked_pairs[0], _checked_pairs[1]
-			_issue = yield self.db["issues"].find_one({"_id":ObjectId(_id)})
+			#here is a trick too:
+			#if any question submitted without check an option, then an IndexError would be raised when we call _checked_pairs[1]
+			#we just omit it, so that it would be treated as an wrong answer.
+			try:
+				_checked_option, _id = _checked_pairs[0], _checked_pairs[1]
+				_issue = yield self.db["issues"].find_one({"_id":ObjectId(_id)})
 
-			if _issue["correct"] == _checked_option:
-				result.append(_key)
+				if _issue["correct"] == _checked_option:
+					result.append(_key)
+			except IndexError:
+				logging.info("[IndexError] raised@ResultHandler.post().")
+
+			total += 1
+
+		self.render("result.html",
+			elites = self.elites,
+			total = total,
+			correct = len(result),
+			rate = len(result)*1.0 / total
+		)
 
 class EliteModule(tornado.web.UIModule):
 	def render(self, elite):

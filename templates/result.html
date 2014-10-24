@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block main %}
+<main id="main" class="hfeed">
+	<div id="main-exam-result">
+		<p>一共回答：{{ total }}题</p>
+		<p>回答正确：{{ correct }}题</p>
+		<p>正确率：{{ '%.2f' % (rate*100) }}%</p>
+
+		{% if rate*100 >= 90 %}
+		<div>哇塞！好牛啊！<img src="{{ static_url('img/good.gif') }}"></div>
+		{% end %}
+
+		{% if rate*100 < 90 and rate*100 >= 60 %}
+		<div>恭喜你！合格啦！<img src="{{ static_url('img/ok.gif') }}"></div>
+		{% end %}
+
+		{% if rate*100 < 60 %}
+		<div>不合格，再接再厉吧...<img src="{{ static_url('img/bad.gif') }}"></div>
+		{% end %}
+	</div>
+</main>
+{% end %}
