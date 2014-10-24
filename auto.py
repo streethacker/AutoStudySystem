@@ -36,6 +36,7 @@ class Application(tornado.web.Application):
 			(r"/auth/login", LoginHandler),
 			(r"/auth/register", RegisterHandler),
 			(r"/auth/logout", LogoutHandler),
+			(r"/auth/infoset", InfosetHandler),
 			(r"/", RootHandler),
 			(r"/blog", BlogHandler),
 			(r"/diz", DizHandler),
@@ -203,6 +204,31 @@ class RegisterHandler(BaseHandler):
 class LogoutHandler(BaseHandler):
 	def get(self):
 		self.clear_cookie("username")
+		self.redirect("/auth/login")
+
+class InfosetHandler(BaseHandler):
+	@tornado.web.authenticated
+	def get(self):
+		status = self.get_argument("status", "")
+		self.render("infoset.html", elites=self.elites, status=status)
+
+	@tornado.web.authenticated
+	@tornado.gen.coroutine
+	def post(self):
+		oldpwd = self._resolve_pwd(self.get_argument("oldpwd", ""))
+		password = self._resolve_pwd(self.get_argument("password", ""))
+
+		#check if the old password valid
+		_user_info = yield self.db["users"].find_one({"username":self.current_user["username"], "password":oldpwd})
+
+		if not _user_info:
+			self.redirect("/auth/infoset?"+urllib.urlencode(dict(status=4)))
+			return
+
+		#save the new password 
+		_user_info["password"] = password
+		self.db["users"].save(_user_info)
+
 		self.redirect("/auth/login")
 
 class RootHandler(BaseHandler):
@@ -435,7 +461,7 @@ class ResultHandler(BaseHandler):
 				if _issue["correct"] == _checked_option:
 					result.append(_key)
 			except IndexError:
-				logging.warning("[IndexError] raised@ResultHandler.post().")
+				logging.info("[IndexError] raised@ResultHandler.post().")
 
 			total += 1
 
