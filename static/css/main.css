@@ -479,3 +479,27 @@ opacity: .7;
 transition: all .3s;
 user-select: none;
 }
+/*
+=============================exam-result.html
+*/
+#main-exam-result{
+overflow: hidden;
+margin-bottom: 20px;
+border-radius: 3px;
+background: #fff;
+box-shadow: 0 2px 3px rgba(0,0,0,.1);
+margin: 40px auto;
+position: relative;
+padding: 20px;
+}
+#main-exam-result>div{
+	position: absolute;
+	top: 30px;
+	right: 50px;
+}
+#main-exam-result button{
+	float: right;
+	margin-right: 100px;
+	padding: 5px 10px;
+
+}
