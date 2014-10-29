@@ -41,6 +41,6 @@
 
 >LI is also a freshman in fore-end development, but he does really really good job during the whole development period. 
 
->Special thanks for LI, we will continue refactoring and make it better.
+>**Special thanks for LI, we will continue refactoring and make it better.**
 
 --------------------------------------------------------------------------
