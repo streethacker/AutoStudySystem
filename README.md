@@ -1,5 +1,4 @@
 #Author#
---------------------------------------------------------------------------
 
 >##CHEN Wei - Senior of CUMT##
 >Responsible for all the back-end code(Tornado), including transform the standard html into Tornado's templates
@@ -7,11 +6,9 @@
 >##LI Cheng - Senior of CUMT##
 >Responsible for the fore-end code, including standard html/css/js as well as all the UI design.          
 
---------------------------------------------------------------------------    
 
 
 #Introduction#
---------------------------------------------------------------------------
 
 >This is a simple auto-study system, which contains 3 core functions: **blog/Q&A/self-assement**. A brief summary of all the tools we have used  are as follows:
 
@@ -36,11 +33,8 @@
 
 
 #Additional Remarks & Special Thanks#
---------------------------------------------------------------------------
 >CHEN is familiar with Python but new to Torndao, it's a great challenge for him to learn Tornado in quite a short time and create this website. He make it!
 
 >LI is also a freshman in fore-end development, but he does really really good job during the whole development period. 
 
 >**Special thanks for LI, we will continue refactoring and make it better.**
-
---------------------------------------------------------------------------
