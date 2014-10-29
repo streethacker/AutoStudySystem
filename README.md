@@ -1,4 +1,4 @@
-#[Author]#
+#Author#
 --------------------------------------------------------------------------
 
 >##CHEN Wei - Senior of CUMT##
@@ -10,7 +10,7 @@
 --------------------------------------------------------------------------    
 
 
-#[Introduction]#
+#Introduction#
 --------------------------------------------------------------------------
 
 >This is a simple auto-study system, which contains 3 core functions: **blog/Q&A/self-assement**. A brief summary of all the tools we have used  are as follows:
@@ -35,7 +35,7 @@
 >>More: [Motor Docs branch stable](http://motor.readthedocs.org/en/stable/)   
 
 
-#[Additional Remarks & Special Thanks]#
+#Additional Remarks & Special Thanks#
 --------------------------------------------------------------------------
 >CHEN is familiar with Python but new to Torndao, it's a great challenge for him to learn Tornado in quite a short time and create this website. He make it!
 
