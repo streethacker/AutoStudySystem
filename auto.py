@@ -34,6 +34,7 @@ define("db_port", default=27017, help="database server run on the db_port",
 
 
 class Application(tornado.web.Application):
+
     def __init__(self):
         handlers = [
             (r"/auth/login", LoginHandler),
@@ -77,6 +78,7 @@ class Application(tornado.web.Application):
 
 
 class BaseHandler(tornado.web.RequestHandler):
+
     @tornado.gen.coroutine
     def prepare(self):
         DEFAULT_TIMEDELTA_BY_DAYS = 10
@@ -142,7 +144,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
         try:
             _cursor = self.db[coll].find(rule).sort(*sort).\
-                skip((current_page-1)*pagesize).limit(pagesize)
+                skip((current_page - 1) * pagesize).limit(pagesize)
         except ValueError:
             logging.error("[ValueError] raised@BaseHandler._resolve_cursor().")
             raise tornado.web.HTTPError(500)
@@ -151,6 +153,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
 
 class LoginHandler(BaseHandler):
+
     def get(self):
         status = self.get_argument("status", "")
         self.render("login.html", elites=self.elites, status=status)
@@ -177,6 +180,7 @@ class LoginHandler(BaseHandler):
 
 
 class RegisterHandler(BaseHandler):
+
     def get(self):
         status = self.get_argument("status", "")
         self.render("register.html", elites=self.elites, status=status)
@@ -213,12 +217,14 @@ class RegisterHandler(BaseHandler):
 
 
 class LogoutHandler(BaseHandler):
+
     def get(self):
         self.clear_cookie("username")
         self.redirect("/auth/login")
 
 
 class InfosetHandler(BaseHandler):
+
     @tornado.web.authenticated
     def get(self):
         status = self.get_argument("status", "")
@@ -235,7 +241,7 @@ class InfosetHandler(BaseHandler):
             {"username": self.current_user["username"], "password": oldpwd})
 
         if not _user_info:
-            self.redirect("/auth/infoset?"+urllib.urlencode(dict(status=4)))
+            self.redirect("/auth/infoset?" + urllib.urlencode(dict(status=4)))
             return
 
         # save the new password
@@ -246,6 +252,7 @@ class InfosetHandler(BaseHandler):
 
 
 class RootHandler(BaseHandler):
+
     @tornado.gen.coroutine
     def get(self):
         DEFAULT_PAGESIZE = 10
@@ -278,6 +285,7 @@ class RootHandler(BaseHandler):
 
 
 class BlogHandler(BaseHandler):
+
     @tornado.gen.coroutine
     def get(self):
         blog_id = self.get_argument("blog_id", "")
@@ -290,6 +298,7 @@ class BlogHandler(BaseHandler):
 
 
 class DizHandler(BaseHandler):
+
     @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self):
@@ -341,6 +350,7 @@ class DizHandler(BaseHandler):
 
 
 class AnswerHandler(BaseHandler):
+
     @tornado.gen.coroutine
     def prepare(self):
         # prepare() here returns a generator, not to execute unless yield it.
@@ -419,6 +429,7 @@ class AnswerHandler(BaseHandler):
 
 
 class ExamHandler(BaseHandler):
+
     @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self):
@@ -439,7 +450,7 @@ class ExamHandler(BaseHandler):
             "sort": ("date", pymongo.DESCENDING),
             "current_page": current_page,
             "pagesize": DEFAULT_PAGESIZE,
-            }
+        }
         _cursor = self._resolve_cursor(**_params)
 
         exams = yield _cursor.to_list(length=DEFAULT_PAGESIZE)
@@ -452,6 +463,7 @@ class ExamHandler(BaseHandler):
 
 
 class PaperHandler(BaseHandler):
+
     @tornado.web.authenticated
     @tornado.gen.coroutine
     def get(self):
@@ -474,6 +486,7 @@ class PaperHandler(BaseHandler):
 
 
 class ResultHandler(BaseHandler):
+
     @tornado.web.authenticated
     @tornado.gen.coroutine
     def post(self):
@@ -503,20 +516,23 @@ class ResultHandler(BaseHandler):
                     elites=self.elites,
                     total=total,
                     correct=len(result),
-                    rate=len(result)*1.0 / total)
+                    rate=len(result) * 1.0 / total)
 
 
 class EliteModule(tornado.web.UIModule):
+
     def render(self, elite):
         return self.render_string("modules/elite.html", elite=elite)
 
 
 class ArticleModule(tornado.web.UIModule):
+
     def render(self, article):
         return self.render_string("modules/article.html", article=article)
 
 
 class PageModule(tornado.web.UIModule):
+
     def render(self, current_page, total_page):
         return self.render_string(
             "modules/page.html",
@@ -526,6 +542,7 @@ class PageModule(tornado.web.UIModule):
 
 
 class QuizModule(tornado.web.UIModule):
+
     def render(self, quiz):
         return self.render_string(
             "modules/question.html",
@@ -534,6 +551,7 @@ class QuizModule(tornado.web.UIModule):
 
 
 class ExamModule(tornado.web.UIModule):
+
     def render(self, exam):
         return self.render_string(
             "modules/overview.html",
@@ -542,6 +560,7 @@ class ExamModule(tornado.web.UIModule):
 
 
 class AnswerModule(tornado.web.UIModule):
+
     def render(self, answer):
         return self.render_string(
             "modules/answer.html",
@@ -550,6 +569,7 @@ class AnswerModule(tornado.web.UIModule):
 
 
 class TestModule(tornado.web.UIModule):
+
     def render(self, index, test):
         return self.render_string(
             "modules/stem.html",
@@ -559,6 +579,7 @@ class TestModule(tornado.web.UIModule):
 
 
 class UserinfoModule(tornado.web.UIModule):
+
     def render(self):
         return self.render_string("modules/userinfo.html")
 
